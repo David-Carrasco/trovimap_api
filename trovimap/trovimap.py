@@ -16,7 +16,7 @@ class City(Location):
 
     def __init__(self, name):
         self.param_name = 'LocalityId'
-        self.type_id = TYPE_ID_NEIGHBORHOOD
+        self.type_id = TYPE_ID_CITY
         super().__init__(name)
 
 
@@ -24,7 +24,7 @@ class Neighborhood(Location):
 
     def __init__(self, name):
         self.param_name = 'SubLocalityId'
-        self.type_id = TYPE_ID_CITY
+        self.type_id = TYPE_ID_NEIGHBORHOOD
         super().__init__(name)
 
 
@@ -38,8 +38,8 @@ LOCATION_TEXT_URL = 'https://www.trovimap.com/api/v2/property/search'
 LOCATION_SEO_URL = 'https://www.trovimap.com/api/v2/seo/view'
 
 #Configuration identities
-TYPE_ID_CITY = '25'
-TYPE_ID_NEIGHBORHOOD = '15'
+TYPE_ID_CITY = 15
+TYPE_ID_NEIGHBORHOOD = 25
 
 
 ##################
@@ -65,7 +65,5 @@ def get_location_by_text(location):
     r = requests.get(LOCATION_SEO_URL, params=payload)
 
     return (r.json())
-
-
 
 
