@@ -13,14 +13,7 @@ class ApiTests(unittest.TestCase):
         city = trovimap.City('Badalona')
         city_request = trovimap.get_location_by_text(location=city)
 
-        #print(city_request['Type'])
-
-        print(city_request)
-
-        print(city_request.get('Type'))
-
-
-        #self.assertIn(city.param_name, city_request.keys())
+        self.assertIn(city.param_name, city_request.keys())
         self.assertEqual(city_request['Type'], trovimap.TYPE_ID_CITY)
 
 
@@ -29,7 +22,7 @@ class ApiTests(unittest.TestCase):
         neigborhood = trovimap.Neighborhood('Pacifico')
         neigborhood_request = trovimap.get_location_by_text(location=neigborhood)
 
-        #self.assertIn(neigborhood.param_name, neigborhood_request.keys())
+        self.assertIn(neigborhood.param_name, neigborhood_request.keys())
         self.assertEqual(neigborhood_request['Type'], trovimap.TYPE_ID_NEIGHBORHOOD)
 
 

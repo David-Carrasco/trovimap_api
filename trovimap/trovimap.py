@@ -23,7 +23,7 @@ class City(Location):
 class Neighborhood(Location):
 
     def __init__(self, name):
-        self.param_name = 'SubLocalityId'
+        self.param_name = 'SublocalityId'
         self.type_id = TYPE_ID_NEIGHBORHOOD
         super().__init__(name)
 
