@@ -19,11 +19,11 @@ class ApiTests(unittest.TestCase):
 
     def test_get_search_location_neighborhood(self):
 
-        neigborhood = trovimap.Neighborhood('Pacifico')
-        neigborhood_request = trovimap.get_location_by_text(location=neigborhood)
+        neighborhood = trovimap.Neighborhood('Pacifico')
+        neighborhood_request = trovimap.get_location_by_text(location=neighborhood)
 
-        self.assertIn(neigborhood.param_name, neigborhood_request.keys())
-        self.assertEqual(neigborhood_request['Type'], trovimap.TYPE_ID_NEIGHBORHOOD)
+        self.assertIn(neighborhood.param_name, neighborhood_request.keys())
+        self.assertEqual(neighborhood_request['Type'], trovimap.TYPE_ID_NEIGHBORHOOD)
 
 
 if __name__ == '__main__':
