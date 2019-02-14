@@ -1,47 +1,18 @@
 import requests
 import json
 import itertools
-#import glom
-
-
-###############
-### CLASSES ###
-###############
-
-class Location:
-
-    # TODO: @property
-
-    def __init__(self, name):
-        self.name = name
-
-class City(Location):
-
-    def __init__(self, name):
-        self.param_name = PARAM_NAME_CITY
-        self.type_id = TYPE_ID_CITY
-        super().__init__(name)
-
-
-class Neighborhood(Location):
-
-    def __init__(self, name):
-        self.param_name = PARAM_NAME_NEIGHBORHOOD
-        self.type_id = TYPE_ID_NEIGHBORHOOD
-        super().__init__(name)
-
 
 #################
 ### CONSTANTS ###
 #################
 
-#URLs
+# URLs
 
 LOCATION_TEXT_URL = 'https://www.trovimap.com/api/v2/property/search'
 LOCATION_SEO_URL = 'https://www.trovimap.com/api/v2/seo/view'
 MAP_SHAPE_URL = 'https://www.trovimap.com/api/v2/map/shape'
 
-#Configuration identities
+# Configuration identities
 
 PARAM_NAME_CITY = 'LocalityId'
 TYPE_ID_CITY = 15
@@ -50,72 +21,101 @@ PARAM_NAME_NEIGHBORHOOD = 'SublocalityId'
 TYPE_ID_NEIGHBORHOOD = 25
 
 
-##################
-### FUNCTIONS  ###
-##################
+###############
+### CLASSES ###
+###############
+
+class Trovimap:
+
+    def _get_location_by_name(self, location_name):
+
+        payload = {'searchString': location_name}
+        endpoint = Endpoint('_get_location_by_name', payload)
+
+        return endpoint.request_get()
+
+    def get_neighborhoods_by_city(self):
+        pass  #TODO
+
+    def get_city_details(self, city_name):
+
+        payload = {'type': TYPE_ID_CITY, 'text': city_name}
+        endpoint = Endpoint('get_location_details', payload)
+
+        return endpoint.request_get()
+
+    def get_neighborhood_details(self, neighborhood_name):
+
+        payload = {'type': TYPE_ID_NEIGHBORHOOD, 'text': neighborhood_name}
+        endpoint = Endpoint('get_location_details', payload)
+
+        return endpoint.request_get()
+
+    def get_properties_by_city(self, city_name):
+        '''Get the property ids of a city'''
+
+        location_id = self.get_city_details(city_name)[PARAM_NAME_CITY]
+        payload = {PARAM_NAME_CITY: location_id, 'PageSize': 20, 'Precision': 5, 'SortField': '_VisualScore'}
+        endpoint = Endpoint('get_properties', payload)
+
+        # pagination generator
+        properties_pagination = endpoint.request_post_pagination()
+
+        # properties list
+        properties = [[elem['Sysid'] for elem in property_elem['properties']]
+                      for property_elem in
+                      itertools.takewhile(lambda response: len(response['properties']), properties_pagination)]
+
+        return list(itertools.chain.from_iterable(properties))
 
 
-# UTILS
+    def get_properties_by_neighborhood(self, neighborhood_name):
+        '''Get the property ids of a neighborhood'''
 
-def request_page(url, payload_base, default_page_param='Page'):
+        location_id = self.get_neighborhood_details(neighborhood_name)[PARAM_NAME_NEIGHBORHOOD]
+        payload = {'SubLocalityId': location_id, 'PageSize': 20, 'Precision': 5, 'SortField': '_VisualScore'}
+        endpoint = Endpoint('get_properties', payload)
 
-    # Request by page number
-    for page in itertools.count(1):
+        # pagination generator
+        properties_pagination = endpoint.request_post_pagination()
 
-        # Updating page parameter
-        payload_base.update({default_page_param: page})
+        # properties list
+        properties = [[elem['Sysid'] for elem in property_elem['properties']]
+                      for property_elem in
+                      itertools.takewhile(lambda response: len(response['properties']), properties_pagination)]
 
-        # Request
-        r = requests.post(url=url, data=json.dumps(payload_base))
-
-        yield r.json()
-
-
-# MAIN API
-
-def get_search_location(location_name):
-    '''
-    :param location_name:
-    :return:
-    '''
-
-    payload = {'searchString': location_name}
-    r = requests.get(LOCATION_TEXT_URL, params=payload)
-
-    return r.json()
+        return list(itertools.chain.from_iterable(properties))
 
 
-def get_location_by_text(location):
+class Endpoint:
 
-    payload = {'type': location.type_id, 'text': location.name}
-    r = requests.get(LOCATION_SEO_URL, params=payload)
+    func_url = {
+        '_get_location_by_name': LOCATION_TEXT_URL,
+        'get_location_details': LOCATION_SEO_URL,
+        'get_properties': MAP_SHAPE_URL
+    }
 
-    return r.json()
+    def __init__(self, func_name, payload):
+
+         self._url = self.func_url.get(func_name)
+         self._payload = payload
+
+    def request_get(self):
+
+        r = requests.get(self._url, params=self._payload)
+        return r.json()
+
+    def request_post_pagination(self):
+        ''' Request by page number'''
+
+        for page in itertools.count(1):
+
+            self._payload.update({'Page': page})
+
+            # Request
+            r = requests.post(url=self._url, data=json.dumps(self._payload))
+
+            yield r.json()
 
 
-def get_properties_by_location(location):
-
-    # Get location id for the param_name attribute
-    location_id = get_location_by_text(location)[location.param_name]
-
-    # TODO - param_name is adapted until properties endpoint unifies the param_name for Neighborhood:
-    #        (SublocalityId vs SubLocalityId)
-    payload = ({'SubLocalityId': location_id}
-               if isinstance(location, Neighborhood)
-               else {location.param_name: location_id})
-
-    # Adding specific payload parameters for this endpoint
-    payload.update({'PageSize': 20, 'Precision': 5, 'SortField': '_VisualScore'})
-
-    # Getting properties ids in paginated requests until there is no properties
-    properties = []
-    for content in itertools.takewhile(lambda response: len(response['properties']),
-                                       request_page(url=MAP_SHAPE_URL, payload_base=payload)):
-
-        properties.append([property['Sysid'] for property in content['properties']])
-
-    # Flatting properties lists
-    properties = list(itertools.chain.from_iterable(properties))
-
-    return properties
 
